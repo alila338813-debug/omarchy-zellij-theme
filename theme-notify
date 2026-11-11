@@ -12,23 +12,48 @@ hex_to_rgb() {
   printf "%d;%d;%d" "0x${hex:0:2}" "0x${hex:2:2}" "0x${hex:4:2}"
 }
 
-ACCENT=$(grep '^accent' "$COLORS_FILE" | cut -d'"' -f2)
-COLOR1=$(grep '^color1 ' "$COLORS_FILE" | cut -d'"' -f2)
-COLOR2=$(grep '^color2 ' "$COLORS_FILE" | cut -d'"' -f2)
-COLOR3=$(grep '^color3 ' "$COLORS_FILE" | cut -d'"' -f2)
-COLOR4=$(grep '^color4 ' "$COLORS_FILE" | cut -d'"' -f2)
-COLOR5=$(grep '^color5 ' "$COLORS_FILE" | cut -d'"' -f2)
-COLOR6=$(grep '^color6 ' "$COLORS_FILE" | cut -d'"' -f2)
+# Omarchy 4.5 colors.toml is semantic (red/green/..., no color1..color6).
+# Ask Omarchy's resolver first so both semantic and legacy themes work, then
+# fall back to reading the file directly for an older or partial install.
+declare -A THEME_COLORS=()
+if command -v omarchy-theme-color >/dev/null 2>&1; then
+  while IFS=$'\t' read -r key value; do
+    [[ -n $key ]] && THEME_COLORS[$key]="$value"
+  done < <(omarchy-theme-color --file "$COLORS_FILE" --all 2>/dev/null)
+fi
 
-A=$(hex_to_rgb "$ACCENT")
+file_color() {
+  sed -n "s/^[[:space:]]*$1[[:space:]]*=[[:space:]]*[\"']\{0,1\}\([^\"'[:space:]#]*\).*/\1/p" "$COLORS_FILE" | head -n 1
+}
+
+get_color() {
+  local value="${THEME_COLORS[$1]:-}"
+  [[ -n $value ]] || value=$(file_color "$1")
+  printf '%s' "$value"
+}
+
+resolve_color() {
+  local value
+  value=$(get_color "$1")
+  [[ $value =~ ^#[0-9A-Fa-f]{6}$ ]] || value=$(get_color "$2")
+  [[ $value =~ ^#[0-9A-Fa-f]{6}$ ]] || value="#ffffff"
+  printf '%s' "$value"
+}
+
+# 4.5 stores the slug in theme.name; show the same title case as
+# `omarchy theme current` (legacy display names pass through unchanged).
+THEME_NAME=$(printf '%s' "$THEME_NAME" | sed -E 's/(^|-)([a-z])/\1\u\2/g; s/-/ /g')
+
+ACCENT=$(resolve_color accent color4)
 COLORS=(
-  "$(hex_to_rgb "$COLOR1")"
-  "$(hex_to_rgb "$COLOR2")"
-  "$(hex_to_rgb "$COLOR3")"
-  "$(hex_to_rgb "$COLOR4")"
-  "$(hex_to_rgb "$COLOR5")"
-  "$(hex_to_rgb "$COLOR6")"
+  "$(hex_to_rgb "$(resolve_color red color1)")"
+  "$(hex_to_rgb "$(resolve_color green color2)")"
+  "$(hex_to_rgb "$(resolve_color yellow color3)")"
+  "$(hex_to_rgb "$(resolve_color blue color4)")"
+  "$(hex_to_rgb "$(resolve_color magenta color5)")"
+  "$(hex_to_rgb "$(resolve_color cyan color6)")"
 )
+A=$(hex_to_rgb "$ACCENT")
 
 TERM_COLS=$(tput cols)
 TERM_LINES=$(tput lines)

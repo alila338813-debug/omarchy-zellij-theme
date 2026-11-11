@@ -37,7 +37,8 @@ colors.toml ──> omarchy theme set/refresh ──> zellij.kdl (R,G,B)
 | Zellij component         | Omarchy color                                            |
 | ------------------------ | -------------------------------------------------------- |
 | Text base                | `foreground`                                             |
-| Backgrounds              | `background`, `color0` (selected)                        |
+| Backgrounds              | `background`, `selection` (selected)                     |
+| Selected text            | `selection_foreground` on `selection`                    |
 | Ribbon selected          | `accent` bg, `background` text                           |
 | Ribbon unselected        | `color7` bg, `background` text                           |
 | Frame selected           | `accent`                                                 |
@@ -58,7 +59,7 @@ The installer:
 
 1. Symlinks `zellij.kdl.tpl` into `~/.config/omarchy/themed/`
 2. Installs the `theme-set` hook into `~/.config/omarchy/hooks/theme-set.d/` (migrating legacy pre-Omarchy Quattro hooks)
-3. Adds `theme "omarchy"` to `~/.config/zellij/config.kdl` (creates a timestamped backup first)
+3. Selects `theme "omarchy"` in `~/.config/zellij/config.kdl`, disabling any competing `theme`/`theme_dark`/`theme_light` selectors (creates a timestamped backup first)
 4. Cleans up old theme file from previous approach if present
 5. Generates and injects the current theme inline into `config.kdl`
 
@@ -109,7 +110,7 @@ Zellij returns to its default theme on the next session.
 
 ## Requirements
 
-- [Omarchy](https://omarchy.org/) Quattro or later with the template/hook system (`omarchy theme set`, `omarchy theme refresh`)
+- [Omarchy](https://omarchy.org/) Quattro (4.0) or later, including 4.5 (Quattro RS), with the template/hook system (`omarchy theme set`, `omarchy theme refresh`)
 - [Zellij](https://zellij.dev/) with config at `~/.config/zellij/config.kdl`
 
 ## Usage

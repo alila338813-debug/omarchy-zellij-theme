@@ -9,8 +9,8 @@ themes {
             emphasis_3 {{ color5_rgb }}
         }
         text_selected {
-            base {{ foreground_rgb }}
-            background {{ color0_rgb }}
+            base {{ selection_foreground_rgb }}
+            background {{ selection_rgb }}
             emphasis_0 {{ color3_rgb }}
             emphasis_1 {{ color4_rgb }}
             emphasis_2 {{ color2_rgb }}
@@ -41,8 +41,8 @@ themes {
             emphasis_3 {{ color5_rgb }}
         }
         table_cell_selected {
-            base {{ foreground_rgb }}
-            background {{ color0_rgb }}
+            base {{ selection_foreground_rgb }}
+            background {{ selection_rgb }}
             emphasis_0 {{ color3_rgb }}
             emphasis_1 {{ color4_rgb }}
             emphasis_2 {{ color2_rgb }}
@@ -57,8 +57,8 @@ themes {
             emphasis_3 {{ color5_rgb }}
         }
         list_selected {
-            base {{ foreground_rgb }}
-            background {{ color0_rgb }}
+            base {{ selection_foreground_rgb }}
+            background {{ selection_rgb }}
             emphasis_0 {{ color3_rgb }}
             emphasis_1 {{ color4_rgb }}
             emphasis_2 {{ color2_rgb }}

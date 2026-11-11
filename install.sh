@@ -41,13 +41,15 @@ echo "[2/5] Installed hook -> $HOOK_TARGET"
 
 # 3. Configure Zellij to use the "omarchy" theme
 if [[ -f "$ZELLIJ_CONFIG" ]]; then
-  if grep -q '^theme "omarchy"' "$ZELLIJ_CONFIG" 2>/dev/null; then
+  # Zellij 0.45 can also choose themes with theme_dark/theme_light. When both
+  # are active they override the static theme, so nothing may compete with ours.
+  if grep -q '^theme "omarchy"' "$ZELLIJ_CONFIG" 2>/dev/null &&
+    ! grep -qE '^theme_(dark|light)[[:space:]]' "$ZELLIJ_CONFIG" 2>/dev/null; then
     echo "[3/5] Zellij config already has theme \"omarchy\", skipping."
   else
     cp "$ZELLIJ_CONFIG" "$ZELLIJ_CONFIG.bak.$(date +%s)"
-    if grep -q '// theme "dracula"' "$ZELLIJ_CONFIG" 2>/dev/null; then
-      sed -i 's|// theme "dracula"|theme "omarchy"|' "$ZELLIJ_CONFIG"
-    elif grep -q '^// *theme ' "$ZELLIJ_CONFIG" 2>/dev/null; then
+    sed -i -E 's#^([[:space:]]*)(theme|theme_dark|theme_light)([[:space:]]+")#\1// \2\3#' "$ZELLIJ_CONFIG"
+    if grep -q '^// *theme ' "$ZELLIJ_CONFIG" 2>/dev/null; then
       sed -i '0,/^\/\/ *theme /{s|^// *theme .*|theme "omarchy"|}' "$ZELLIJ_CONFIG"
     else
       echo '' >> "$ZELLIJ_CONFIG"

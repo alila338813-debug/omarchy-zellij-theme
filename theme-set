@@ -9,6 +9,14 @@ if [[ ! -f "$GENERATED_THEME" ]] || [[ ! -f "$ZELLIJ_CONFIG" ]]; then
   exit 0
 fi
 
+# Omarchy 4.5 runs hooks of superseded switches too (its docs: "its hook still
+# runs"). The hook gets the theme it was queued for as $1; skip when a newer
+# switch has already replaced it, so no stale notification or rewrite lands.
+CURRENT_THEME=$(cat "$HOME/.local/state/omarchy/current/theme.name" 2>/dev/null | tr -d '\n')
+if [[ -n "${1:-}" && -n "$CURRENT_THEME" && "$1" != "$CURRENT_THEME" ]]; then
+  exit 0
+fi
+
 # Convert "R,G,B" to "R G B" for Zellij
 THEME_BLOCK=$(sed 's/\([0-9]\{1,3\}\),\([0-9]\{1,3\}\),\([0-9]\{1,3\}\)/\1 \2 \3/g' "$GENERATED_THEME")
 
@@ -19,7 +27,7 @@ CLEAN_CONFIG=$(sed "\%${START_MARKER}%,\%${END_MARKER}%d" "$ZELLIJ_CONFIG")
 printf '%s\n\n%s\n%s\n%s\n' "$CLEAN_CONFIG" "$START_MARKER" "$THEME_BLOCK" "$END_MARKER" > "$ZELLIJ_CONFIG"
 
 # --- Theme change notification ---
-THEME_NAME=$(cat "$HOME/.local/state/omarchy/current/theme.name" 2>/dev/null | tr -d '\n')
+THEME_NAME="$CURRENT_THEME"
 COLORS_FILE="$HOME/.local/state/omarchy/current/theme/colors.toml"
 SCRIPT_DIR="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")" && pwd)"
 NOTIFY_SCRIPT="$SCRIPT_DIR/theme-notify"
