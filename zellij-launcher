@@ -1,0 +1,19 @@
+#!/bin/bash
+#
+# Launch Zellij in the fixed "alila" session.
+#
+# Bare `zellij` creates the session when it does not exist and attaches to it
+# when it does. Any argument (subcommand, flag, command to run) is passed
+# through untouched, so `zellij list-sessions`, `zellij action ...`, etc. keep
+# working. Inside an existing Zellij session the normal Zellij behaviour is
+# preserved.
+
+set -euo pipefail
+
+SESSION_NAME="${ZELLIJ_DEFAULT_SESSION:-alila}"
+
+if [[ $# -eq 0 && -z "${ZELLIJ:-}" ]]; then
+  set -- attach --create "$SESSION_NAME"
+fi
+
+exec zellij "$@"

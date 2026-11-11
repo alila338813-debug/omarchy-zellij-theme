@@ -61,7 +61,8 @@ The installer:
 2. Installs the `theme-set` hook into `~/.config/omarchy/hooks/theme-set.d/` (migrating legacy pre-Omarchy Quattro hooks)
 3. Selects `theme "omarchy"` in `~/.config/zellij/config.kdl`, disabling any competing `theme`/`theme_dark`/`theme_light` selectors (creates a timestamped backup first)
 4. Cleans up old theme file from previous approach if present
-5. Generates and injects the current theme inline into `config.kdl`
+5. Installs the `zellij-launcher` script into `~/.local/bin/`, aliases `zellij` to it in `~/.bashrc`/`~/.zshrc`, and points the `zellij.desktop` entry in `~/.local/share/applications/` at it (so launches from the Omarchy menu also land in `alila`)
+6. Generates and injects the current theme inline into `config.kdl`
 
 It is safe to re-run -- the script is idempotent.
 
@@ -95,6 +96,7 @@ This reverts everything:
 3. Comments out `theme "omarchy"` in `~/.config/zellij/config.kdl`
 4. Removes the inline `themes {}` block from `config.kdl`
 5. Cleans up old theme file if present
+6. Removes the `zellij-launcher` script, its shell alias, and the `zellij.desktop` override
 
 Zellij returns to its default theme on the next session.
 
@@ -105,6 +107,7 @@ Zellij returns to its default theme on the next session.
 | `zellij.kdl.tpl`  | Zellij theme template using `{{ key_rgb }}` placeholders             |
 | `theme-set`        | Hook script -- converts RGB format and injects theme into config.kdl |
 | `theme-notify`     | Floating pane notification shown on theme change                     |
+| `zellij-launcher`  | Starts/attaches the fixed `alila` session on a bare `zellij`         |
 | `install.sh`       | Installer (symlink, hook, config, initial apply)                     |
 | `uninstall.sh`     | Uninstaller (reverts all changes)                                    |
 
@@ -123,3 +126,14 @@ omarchy theme set catppuccin    # same
 ```
 
 All Zellij sessions -- including ones already running -- pick up the new theme in real time.
+
+## Default session
+
+After installing, a bare `zellij` always lands in the fixed `alila` session: it is created on the first launch and attached to on later launches.
+
+```bash
+zellij               # create or attach to "alila"
+zellij list-sessions # arguments and subcommands pass through unchanged
+```
+
+The installer adds an alias for `~/.local/bin/zellij-launcher` to `~/.bashrc` and `~/.zshrc`, so this applies to interactive shells. GUI launches do not read shell aliases, so the installer also drops a `zellij.desktop` in `~/.local/share/applications/` whose `Exec` calls the launcher; that entry shadows the system one in the Omarchy menu. Inside an existing Zellij session, Zellij's normal behaviour is preserved. Set `ZELLIJ_DEFAULT_SESSION` to use a different session name.
