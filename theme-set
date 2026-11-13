@@ -20,11 +20,63 @@ fi
 # Convert "R,G,B" to "R G B" for Zellij
 THEME_BLOCK=$(sed 's/\([0-9]\{1,3\}\),\([0-9]\{1,3\}\),\([0-9]\{1,3\}\)/\1 \2 \3/g' "$GENERATED_THEME")
 
-# Remove previous theme block if present
-CLEAN_CONFIG=$(sed "\%${START_MARKER}%,\%${END_MARKER}%d" "$ZELLIJ_CONFIG")
+# A config kept in a dotfiles repo is usually a symlink. Rewrite the file it
+# points at, so the rewrite below never replaces the link with a plain file.
+CONFIG_PATH=$(readlink -f "$ZELLIJ_CONFIG" 2>/dev/null) || CONFIG_PATH="$ZELLIJ_CONFIG"
+CONFIG_DIR=$(dirname "$CONFIG_PATH")
 
-# Append new theme block
-printf '%s\n\n%s\n%s\n%s\n' "$CLEAN_CONFIG" "$START_MARKER" "$THEME_BLOCK" "$END_MARKER" > "$ZELLIJ_CONFIG"
+# Build the new config next to the old one and swap it in whole. Zellij watches
+# this file and reloads on every change; a config truncated first and written
+# afterwards can be read half-written, and a parse error there leaves the
+# running sessions on the previous theme until something rewrites the file.
+WORK=$(mktemp "$CONFIG_DIR/.config.kdl.XXXXXX" 2>/dev/null)
+if [[ -z "$WORK" ]]; then
+  echo "omarchy-zellij-theme: cannot write next to $CONFIG_PATH" >&2
+  exit 1
+fi
+
+render_config() {
+  local target="$1" clean
+
+  # Remove previous theme block if present. Command substitution drops the
+  # newlines (and blank lines) left behind, so re-running on an unchanged theme
+  # produces byte-identical output instead of growing the file each switch.
+  clean=$(sed "\%${START_MARKER}%,\%${END_MARKER}%d" "$CONFIG_PATH")
+  printf '%s\n' "$clean" >"$target"
+
+  # Select our theme on every run. `zellij options`, a zellij upgrade and
+  # Omarchy's own config templates can regenerate config.kdl and drop the
+  # `theme` node (or re-enable `theme_dark`/`theme_light`, which override it).
+  # Zellij then silently falls back to its built-in theme: the UI never follows
+  # Omarchy again, while the rest of the desktop (terminals included) does.
+  sed -i -E 's#^([[:space:]]*)(theme|theme_dark|theme_light)([[:space:]]+")#\1// \2\3#' "$target"
+  if grep -q '^// *theme ' "$target"; then
+    sed -i '0,/^\/\/ *theme /{s|^// *theme .*|theme "omarchy"|}' "$target"
+  else
+    printf 'theme "omarchy"\n' >>"$target"
+  fi
+
+  # Append new theme block
+  printf '\n%s\n%s\n%s\n' "$START_MARKER" "$THEME_BLOCK" "$END_MARKER" >>"$target"
+}
+
+# A config zellij cannot parse loses every setting until someone fixes the
+# file, so never trade a working config for a broken one.
+render_config "$WORK"
+if ! ZELLIJ_CONFIG_FILE="$WORK" zellij setup --check >/dev/null 2>&1; then
+  echo "omarchy-zellij-theme: refusing to write an invalid config, kept $CONFIG_PATH" >&2
+  rm -f "$WORK"
+  exit 1
+fi
+
+# Same bytes (a refresh, or a theme that maps to the same colors): leave the
+# file alone, so zellij is not asked to reload for nothing.
+if cmp -s "$WORK" "$CONFIG_PATH"; then
+  rm -f "$WORK"
+else
+  chmod --reference="$CONFIG_PATH" "$WORK" 2>/dev/null || chmod 644 "$WORK"
+  mv -f "$WORK" "$CONFIG_PATH"
+fi
 
 # --- Theme change notification ---
 THEME_NAME="$CURRENT_THEME"

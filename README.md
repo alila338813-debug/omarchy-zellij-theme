@@ -17,6 +17,8 @@ Every time you run `omarchy theme set`, Zellij picks up the same color palette i
 
 Omarchy's template engine processes `zellij.kdl.tpl` using the active theme's `colors.toml`, generating a KDL theme block in `~/.local/state/omarchy/current/theme/zellij.kdl`. A `theme-set` hook converts the output from comma-separated RGB (`R,G,B`) to space-separated (`R G B`) and injects the `themes {}` block directly into `~/.config/zellij/config.kdl`. Since Zellij watches its config file, existing sessions hot-reload the new theme instantly.
 
+The hook also re-asserts `theme "omarchy"` on every run (and keeps `theme_dark`/`theme_light` disabled, since they override it): Zellij rewrites `config.kdl` itself, so a `zellij options` change or an upgrade can drop the selection, after which Zellij silently falls back to its built-in theme and the UI stops following Omarchy. It writes the config atomically (temp file plus rename, following a symlinked config), so the watcher never reads a half-written file, and it refuses to write a config Zellij cannot parse.
+
 ```
 colors.toml ──> omarchy theme set/refresh ──> zellij.kdl (R,G,B)
                                               ~/.local/state/omarchy/current/theme/
